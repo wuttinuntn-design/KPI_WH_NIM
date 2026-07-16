@@ -1,0 +1,1411 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NIM Warehouse KPI — คลังลำพูน / คลังบางนา</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Thai:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.44.0/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2"></script>
+<script>
+if(typeof Chart !== 'undefined' && typeof ChartDataLabels !== 'undefined'){ Chart.register(ChartDataLabels); }
+</script>
+<script>
+if(typeof Chart !== 'undefined'){ Chart.defaults.font.family = "'IBM Plex Sans Thai', sans-serif"; }
+</script>
+<style>
+:root{
+  --bg:#FFFFFF; --panel:#F7F9FC; --panel2:#EEF2F8; --border:#E3E8F0;
+  --text:#1A2333; --muted:#5F6B85; --muted2:#8B96AC;
+  --primary:#0C447C; --primary-light:#E6F1FB;
+  --ok:#1D9E75; --ok-bg:#E1F5EE;
+  --warn:#BA7517; --warn-bg:#FAEEDA;
+  --err:#A32D2D; --err-bg:#FCEBEB;
+  --ab:#E2583E; --cc:#3fa9b4;
+  --radius:12px;
+}
+*{box-sizing:border-box;}
+body{margin:0; background:var(--bg); color:var(--text); font-family:'IBM Plex Sans Thai',sans-serif; min-height:100vh;}
+.wrap{max-width:1400px; margin:0 auto; padding:14px 28px 40px;}
+.mono{font-family:'IBM Plex Mono',monospace;}
+
+header{display:flex; align-items:center; justify-content:space-between; margin-bottom:8px; flex-wrap:wrap; gap:10px; padding-bottom:10px; border-bottom:1px solid var(--border);}
+.brand{display:flex; align-items:center; gap:9px;}
+.brand .logo{width:28px; height:28px; border-radius:8px; background:var(--primary); color:#fff; display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px;}
+h1{font-size:15.5px; margin:0; font-weight:700;}
+.verbadge{font-size:10.5px; font-weight:600; font-family:'IBM Plex Mono',monospace; color:var(--muted); background:var(--panel2); border:1px solid var(--border); border-radius:999px; padding:2px 8px; margin-left:6px;}
+.sub{color:var(--muted); font-size:12.5px; margin-top:2px;}
+.dataAsOf{font-size:11.5px; font-weight:600; padding:5px 11px; border-radius:999px; display:flex; align-items:center; gap:5px; border:1px solid var(--border); color:var(--muted); white-space:nowrap;}
+
+.tabs{display:flex; gap:6px; margin:16px 0 20px; border-bottom:1px solid var(--border); overflow-x:auto;}
+.tab{display:flex; align-items:center; gap:7px; padding:11px 16px 13px; font-size:13.5px; font-weight:500; color:var(--muted); cursor:pointer; border:none; background:none; white-space:nowrap; border-radius:8px 8px 0 0; border-bottom:2.5px solid transparent; margin-bottom:-1px; font-family:inherit; transition:.12s;}
+.tab i{font-size:17px;}
+.tab:hover:not(.active){color:var(--text); background:var(--panel);}
+.tab.active{color:var(--primary); border-bottom-color:var(--primary); font-weight:600; background:var(--primary-light);}
+.tabpanel{display:none;}
+.tabpanel.active{display:block;}
+
+.toolbar{display:flex; gap:10px; align-items:center; margin-bottom:18px; flex-wrap:wrap;}
+select, input[type=text], input[type=date], input[type=number]{
+  font-family:inherit; font-size:13.5px; padding:8px 12px; border-radius:8px; border:1px solid var(--border);
+  background:#fff; color:var(--text);
+}
+button.btn{font-family:inherit; font-size:13px; font-weight:600; padding:9px 16px; border-radius:8px; border:1px solid var(--border); background:#fff; color:var(--text); cursor:pointer; display:inline-flex; align-items:center; gap:6px;}
+button.btn.primary{background:var(--primary); color:#fff; border-color:var(--primary);}
+button.btn.primary:hover{opacity:.92;}
+button.btn:disabled{opacity:.5; cursor:not-allowed;}
+
+.grid{display:grid; gap:14px;}
+.grid.cols-2{grid-template-columns:repeat(2,1fr);}
+.grid.cols-3{grid-template-columns:repeat(3,1fr);}
+.grid.cols-4{grid-template-columns:repeat(4,1fr);}
+@media(max-width:900px){ .grid.cols-2,.grid.cols-3,.grid.cols-4{grid-template-columns:1fr;} }
+
+.card{background:var(--panel); border:1px solid var(--border); border-radius:var(--radius); padding:18px;}
+.card.hero{background:linear-gradient(135deg,var(--primary-light),#fff); border-color:#cfe3f7;}
+.card-label{font-size:12px; color:var(--muted); font-weight:600; text-transform:uppercase; letter-spacing:.03em; margin-bottom:6px;}
+.card-value{font-size:30px; font-weight:700; line-height:1.1;}
+.card-value .unit{font-size:14px; font-weight:500; color:var(--muted); margin-left:4px;}
+.card-sub{font-size:12.5px; color:var(--muted); margin-top:6px;}
+
+.gradebadge{display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; border-radius:8px; padding:3px 10px; min-width:28px;}
+.gradebadge.A{background:var(--ok-bg); color:var(--ok);}
+.gradebadge.B{background:#E7F0FE; color:#2A5DB0;}
+.gradebadge.C{background:var(--warn-bg); color:var(--warn);}
+.gradebadge.D{background:#FBE4D5; color:#B85C1F;}
+.gradebadge.F{background:var(--err-bg); color:var(--err);}
+
+table{width:100%; border-collapse:collapse; font-size:13px;}
+th{text-align:left; font-size:11.5px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.02em; padding:9px 10px; border-bottom:1.5px solid var(--border); background:var(--panel);}
+td{padding:9px 10px; border-bottom:1px solid var(--border); vertical-align:middle;}
+tr:last-child td{border-bottom:none;}
+.kpi-name{font-weight:600; font-size:12.5px;}
+.kpi-formula{font-size:11px; color:var(--muted2); margin-top:2px;}
+.weight-tag{font-size:11px; color:var(--muted); font-family:'IBM Plex Mono',monospace;}
+
+.section-title{display:flex; align-items:center; gap:8px; font-size:15px; font-weight:700; margin:26px 0 12px;}
+.section-title .tag{font-size:11px; font-weight:700; padding:3px 9px; border-radius:999px;}
+.tag.lpn{background:var(--primary-light); color:var(--primary);}
+.tag.ab{background:#FCE9E4; color:var(--ab);}
+.tag.cc{background:#E3F4F5; color:var(--cc);}
+
+.unitcard{border:1px solid var(--border); border-radius:var(--radius); overflow:hidden; margin-bottom:16px;}
+.unitcard-head{display:flex; align-items:center; justify-content:space-between; padding:14px 18px; background:var(--panel);}
+.unitcard-head .name{font-weight:700; font-size:14.5px;}
+.unitcard-body{padding:0;}
+
+.formgrid{display:grid; grid-template-columns:1.6fr 1fr 1fr 1.4fr; gap:10px; align-items:center; padding:10px 14px; border-bottom:1px solid var(--border);}
+.formgrid:last-child{border-bottom:none;}
+.formgrid .flabel{font-weight:600; font-size:12.5px;}
+.formgrid .fformula{font-size:11px; color:var(--muted2); margin-top:2px;}
+.formgrid input{width:100%;}
+@media(max-width:900px){ .formgrid{grid-template-columns:1fr; gap:6px;} }
+
+.banner{padding:10px 14px; border-radius:8px; font-size:12.5px; font-weight:600; margin-bottom:14px; display:none;}
+.banner.show{display:block;}
+.banner.ok{background:var(--ok-bg); color:var(--ok); border:1px solid #bfe8d7;}
+.banner.err{background:var(--err-bg); color:var(--err); border:1px solid #f3c9c9;}
+
+.load-overlay{position:fixed; inset:0; background:rgba(247,249,252,.95); z-index:999; display:flex; align-items:center; justify-content:center; transition:.25s;}
+.load-overlay.hide{opacity:0; visibility:hidden; pointer-events:none;}
+.load-spinner{width:40px; height:40px; margin:0 auto 14px; border:4px solid var(--primary-light); border-top-color:var(--primary); border-radius:50%; animation:spin .75s linear infinite;}
+@keyframes spin{to{transform:rotate(360deg);}}
+.ti-spin-anim{display:inline-block; animation:spin .7s linear infinite;}
+.load-card{background:#fff; border:1px solid var(--border); border-radius:16px; padding:28px 34px; text-align:center;}
+.load-card h3{font-size:14px; margin:0 0 4px;}
+.load-card p{font-size:11.5px; color:var(--muted2); margin:0;}
+
+.settings-row{display:grid; grid-template-columns:2fr .8fr .7fr .7fr .7fr .7fr .6fr; gap:8px; align-items:center; padding:8px 10px; border-bottom:1px solid var(--border); font-size:12.5px;}
+.settings-row.head{font-weight:700; color:var(--muted); font-size:11px; text-transform:uppercase;}
+.settings-row input{padding:5px 7px; font-size:12px;}
+
+/* ---- Mobile polish ---- */
+@media(max-width:640px){
+  .wrap{padding:10px 12px 28px;}
+  header{gap:8px;}
+  h1{font-size:13.5px;}
+  .sub{font-size:11.5px;}
+  .tabs{gap:2px;}
+  .tab{padding:9px 10px 11px; font-size:12px;}
+  .tab i{font-size:15px;}
+  .toolbar{gap:6px; margin-bottom:12px;}
+  .toolbar label{font-size:11.5px !important;}
+  .toolbar select, .toolbar input[type=date]{font-size:12.5px; padding:6px 8px;}
+  #modeMtdBtn, #modeWeeklyBtn, #modeYearlyBtn{font-size:11.5px; padding:7px 10px;}
+  #modeMtdBtn i, #modeWeeklyBtn i, #modeYearlyBtn i{font-size:14px;}
+  #btnSaveEntryTop{margin-left:0 !important; width:100%; justify-content:center;}
+  .card{padding:12px;}
+  .card-value{font-size:24px;}
+  .unitcard-head{flex-direction:column; align-items:flex-start; gap:4px;}
+  /* ตาราง daygrid: ลดความกว้างคอลัมน์ซ้ายที่ sticky ไว้ เพื่อให้เหลือที่แสดงข้อมูลมากขึ้น */
+  table.daygrid td.rowlabel, table.daygrid th.rowlabel{min-width:130px; max-width:130px; font-size:10.5px;}
+  table.daygrid td.target-col, table.daygrid th.target-col{left:130px; min-width:48px; font-size:10.5px;}
+  table.daygrid td.mtd-col, table.daygrid th.mtd-col{left:178px; min-width:52px; font-size:10.5px;}
+  table.daygrid td.daycell input{width:58px; font-size:10.5px;}
+  table.daygrid th, table.daygrid td{padding:4px 4px; font-size:10.5px;}
+  .settings-row{grid-template-columns:1.6fr .7fr .6fr .6fr .6fr .6fr .5fr; gap:4px; font-size:11px;}
+  .settings-row input{font-size:11px; padding:4px 5px;}
+}
+
+/* ---- Day-grid: ตารางกรอก/แสดงผลทั้งเดือน (ลำพูน) ---- */
+.daygrid-wrap{overflow-x:auto; overflow-y:auto; max-height:75vh; border:1px solid var(--border); border-radius:var(--radius); background:#fff;}
+table.daygrid{border-collapse:collapse; font-size:11.5px; white-space:nowrap;}
+table.daygrid th, table.daygrid td{border:1px solid var(--border); padding:5px 6px; text-align:center;}
+table.daygrid thead th{position:sticky; top:0; z-index:4; background:var(--panel);}
+table.daygrid th{background:var(--panel); font-weight:700; color:var(--muted); font-size:10.5px;}
+table.daygrid td.rowlabel, table.daygrid th.rowlabel{
+  position:sticky; left:0; z-index:2; background:#fff; text-align:left; min-width:230px; max-width:230px; white-space:normal; font-size:11.5px;
+}
+table.daygrid th.rowlabel{background:var(--panel); z-index:6;}
+table.daygrid td.target-col, table.daygrid th.target-col{position:sticky; left:230px; z-index:2; background:#fff; min-width:64px;}
+table.daygrid th.target-col{background:var(--panel); z-index:6;}
+table.daygrid td.mtd-col, table.daygrid th.mtd-col{position:sticky; left:294px; z-index:2; background:var(--primary-light); font-weight:700; min-width:70px;}
+table.daygrid th.mtd-col{background:#cfe3f7; z-index:6;}
+table.daygrid td.daycell input{width:78px; padding:3px 4px; font-size:11.5px; border-radius:5px; text-align:right;}
+table.daygrid tr.section-row td{background:var(--panel2); font-weight:700; text-align:left; color:var(--primary); padding:7px 8px;}
+table.daygrid td.kpi-cell{font-family:'IBM Plex Mono',monospace; font-size:11px;}
+table.daygrid td.weekend{background:#FAFBFD;}
+</style>
+</head>
+<body>
+
+<div class="load-overlay" id="loadOverlay">
+  <div class="load-card">
+    <div class="load-spinner"></div>
+    <h3>กำลังโหลดข้อมูล KPI</h3>
+    <p>เชื่อมต่อ Google Sheet...</p>
+  </div>
+</div>
+
+<div class="load-overlay hide" id="saveOverlay">
+  <div class="load-card">
+    <div class="load-spinner"></div>
+    <h3 id="saveOverlayTitle"><i class="ti ti-device-floppy"></i> กำลังบันทึกข้อมูล...</h3>
+    <p id="saveOverlaySub">กำลังส่งข้อมูลไปยัง Google Sheet โปรดรอสักครู่</p>
+  </div>
+</div>
+
+<div class="wrap">
+  <header>
+    <div class="brand">
+      <div class="logo">WH</div>
+      <div>
+        <h1>NIM Warehouse KPI Dashboard<span class="verbadge">v1 · 2026-07-16</span></h1>
+        <div class="sub">แผนกคลังสินค้า — คลังลำพูน (3PL PepsiCo) &amp; คลังบางนา (AB / CC)</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <button class="btn" id="btnRefresh" title="โหลดข้อมูลล่าสุดจาก Google Sheet"><i class="ti ti-refresh"></i> รีเฟรช</button>
+      <div class="dataAsOf" id="dataAsOf"><i class="ti ti-clock"></i> <span>—</span></div>
+    </div>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-tab="overview"><i class="ti ti-layout-dashboard"></i> ภาพรวม</button>
+    <button class="tab" data-tab="lpn"><i class="ti ti-building-warehouse"></i> คลังลำพูน</button>
+    <button class="tab" data-tab="bna"><i class="ti ti-building-store"></i> คลังบางนา</button>
+    <button class="tab" data-tab="entry"><i class="ti ti-edit"></i> นำเข้าข้อมูล</button>
+    <button class="tab" data-tab="settings"><i class="ti ti-settings"></i> ตั้งค่า</button>
+  </div>
+
+  <div class="toolbar">
+    <label style="font-size:12.5px;color:var(--muted);font-weight:600;">โหมดดูข้อมูล:</label>
+    <button class="btn primary" id="modeMtdBtn"><i class="ti ti-calendar-event"></i> MTD (รายเดือน)</button>
+    <button class="btn" id="modeWeeklyBtn"><i class="ti ti-calendar-week"></i> รายสัปดาห์</button>
+    <button class="btn" id="modeYearlyBtn"><i class="ti ti-calendar-stats"></i> รายปี</button>
+    <span style="width:1px;height:22px;background:var(--border);margin:0 4px;"></span>
+    <label id="monthSelectLabel" style="font-size:12.5px;color:var(--muted);font-weight:600;">เดือนที่ดู:</label>
+    <select id="monthSelect"></select>
+    <label id="yearSelectLabel" style="font-size:12.5px;color:var(--muted);font-weight:600;display:none;">ปีที่ดู:</label>
+    <select id="yearSelect" style="display:none;"></select>
+  </div>
+
+  <!-- ===================== OVERVIEW ===================== -->
+  <div class="tabpanel active" id="panel-overview">
+    <div class="grid cols-3" id="overviewCards"></div>
+
+    <div class="section-title" id="overviewChartTitle"><i class="ti ti-chart-bar"></i> เปรียบเทียบคะแนนหน่วยงาน</div>
+    <div class="card" style="height:280px;"><canvas id="overviewChart"></canvas></div>
+
+    <div class="section-title" id="watchlistTitle"><i class="ti ti-alert-triangle"></i> KPI ที่ต้องเฝ้าระวัง (เกรด C ลงไป)</div>
+    <div class="card" id="watchlist"><table><tbody></tbody></table></div>
+  </div>
+
+  <!-- ===================== ลำพูน ===================== -->
+  <div class="tabpanel" id="panel-lpn">
+    <div class="section-title"><i class="ti ti-building-warehouse" style="color:var(--primary);"></i> <span class="tag lpn">ลำพูน</span> ส่วนงานคลังลำพูน — 3PL PepsiCo</div>
+    <div id="lpnUnitCard"></div>
+  </div>
+
+  <!-- ===================== บางนา ===================== -->
+  <div class="tabpanel" id="panel-bna">
+    <div class="section-title"><i class="ti ti-box" style="color:var(--ab);"></i> <span class="tag ab">บางนา AB</span> คลังบางนา AB</div>
+    <div id="abUnitCard"></div>
+    <div class="section-title"><i class="ti ti-snowflake" style="color:var(--cc);"></i> <span class="tag cc">บางนา CC</span> คลังบางนา CC (Cold Chain)</div>
+    <div id="ccUnitCard"></div>
+  </div>
+
+  <!-- ===================== นำเข้าข้อมูล ===================== -->
+  <div class="tabpanel" id="panel-entry">
+    <div class="toolbar">
+      <label id="entryDateLabel" style="font-size:12.5px;font-weight:600;">วันที่:</label>
+      <input type="date" id="entryDate">
+      <label style="font-size:12.5px;font-weight:600;margin-left:8px;">หน่วยงาน:</label>
+      <select id="entryUnit">
+        <option value="LPN">ส่วนงานคลังลำพูน</option>
+        <option value="BNA_AB">คลังบางนา AB</option>
+        <option value="BNA_CC">คลังบางนา CC</option>
+      </select>
+      <span class="sub" id="entryHint" style="margin-left:6px;"></span>
+      <button class="btn primary" id="btnSaveEntryTop" style="margin-left:auto;"><i class="ti ti-device-floppy"></i> บันทึกข้อมูลวันนี้</button>
+    </div>
+    <div class="banner" id="entryBanner"></div>
+    <div class="card" id="entryForm" style="padding:14px;"></div>
+    <div style="margin-top:14px;" id="entrySaveBtnWrap">
+      <button class="btn primary" id="btnSaveEntry"><i class="ti ti-device-floppy"></i> บันทึกข้อมูลวันนี้</button>
+    </div>
+  </div>
+
+  <!-- ===================== ตั้งค่า ===================== -->
+  <div class="tabpanel" id="panel-settings">
+    <p class="sub" style="margin-bottom:14px;">แก้ไขน้ำหนัก (weight) และเกณฑ์เกรด A/B/C/D ของแต่ละ KPI ได้ที่นี่ — ผลรวมน้ำหนักของ KPI ในแต่ละหน่วยงานควรรวมเป็น 1.0 เสมอ</p>
+    <div class="banner" id="settingsBanner"></div>
+    <div id="settingsTables"></div>
+    <div style="margin-top:14px;">
+      <button class="btn primary" id="btnSaveSettings"><i class="ti ti-device-floppy"></i> บันทึกการตั้งค่า</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   CONFIG — แก้ URL นี้เป็น URL การ Deploy Apps Script ของ UP
+   ============================================================ */
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbw-3B4Ttg9NQysdbz37ceQ_s85PLbTMDa9OP--Or94hNxCQ4CvOUQ5R2F3bfArUCwHyCw/exec';
+
+let UNITS = [], KPIS = [], DAILY = [], LPN_RAW = [];
+let currentMonth = null; // 'YYYY-MM'
+let currentYear = null;  // number, e.g. 2026
+let viewMode = 'mtd';    // 'mtd' | 'yearly'
+let overviewChartInstance = null;
+
+const GRADE_SCORE = { A:4, B:3, C:2, D:1, F:0 };
+
+/* ตารางฟิลด์ข้อมูลดิบรายวันของคลังลำพูน — ต้องตรงกับหัวคอลัมน์ในชีต LPN_Daily_Raw
+   และตรงกับหน้าตา "KPI Daily Report" ต้นฉบับของ UP */
+const RAW_FIELDS = [
+  { id:'stock_system',     label:'Stock สินค้า (SYSTEM)',                         uom:'กล่อง' },
+  { id:'stock_actual',     label:'Stock สินค้า (Act.)',                           uom:'กล่อง' },
+  { id:'mismatch_qty',     label:'วันที่สินค้าจริงที่ไม่ตรงกับระบบ',                uom:'กล่อง' },
+  { id:'ship_total',       label:'สินค้าที่มีการจัดส่งทุกขนส่ง (STO+SO)',           uom:'กล่อง' },
+  { id:'ship_nim',         label:'สินค้าที่มีการจัดส่งเฉพาะ NIM EXPRESS',           uom:'กล่อง' },
+  { id:'bill_total',       label:'บิลการจัดส่ง (NIM)',                            uom:'บิล' },
+  { id:'bill_pod',         label:'ปิดบิลสำเร็จ (POD)',                            uom:'บิล' },
+  { id:'truck_total',      label:'จำนวนรถใช้จัดส่งทั้งหมด',                        uom:'คัน' },
+  { id:'truck_ontime',     label:'จำนวนรถที่จัดส่งตรงเวลา',                        uom:'คัน' },
+  { id:'damage_wh',        label:'สินค้าเสียหายสูญหายในคลัง',                      uom:'กล่อง' },
+  { id:'damage_transport', label:'สินค้าเสียหายสูญหายจากการขนส่ง',                  uom:'กล่อง' },
+  { id:'grb_return',       label:'GRB รับกลับเข้าคลัง (สาเหตุเกิดจากคลัง)',          uom:'กล่อง' },
+  { id:'accident',         label:'Accident',                                     uom:'เคส' },
+  { id:'gmp',              label:'GMP/AIB (ผล Audit — กรอกเฉพาะช่วงประเมิน)',       uom:'%' },
+];
+
+/* สูตรแปลง "ค่าดิบรายวัน" -> {numerator, denominator} ของ KPI แต่ละตัว (เฉพาะลำพูน) */
+const LPN_FORMULAS = {
+  LPN01: row => ({ num: row.stock_actual,                       den: row.stock_system }),
+  LPN02: row => ({ num: row.stock_system - row.mismatch_qty,    den: row.stock_system }),
+  LPN03: row => ({ num: row.damage_wh,                          den: row.ship_total }),
+  LPN04: row => ({ num: row.damage_transport,                   den: row.ship_total }),
+  LPN05: row => ({ num: row.truck_ontime,                       den: row.truck_total }),
+  LPN06: row => ({ num: row.bill_pod,                           den: row.bill_total }),
+  LPN07: row => ({ num: row.grb_return,                         den: row.ship_total }),
+  LPN09: row => ({ num: row.accident,                           den: 1 }),
+};
+
+/* ---------------- Tabs ---------------- */
+document.querySelectorAll('.tab').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.tab').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.tabpanel').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById('panel-'+btn.dataset.tab).classList.add('active');
+  });
+});
+
+/* ---------------- Init ---------------- */
+async function loadData(){
+  const res = await fetch(GAS_URL + '?action=getAll');
+  const json = await res.json();
+  if(!json.ok) throw new Error(json.error || 'โหลดข้อมูลไม่สำเร็จ');
+  UNITS = json.units; KPIS = json.kpis; DAILY = json.daily; LPN_RAW = json.lpnRaw || [];
+
+  const isValidDate = s => typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
+  DAILY = DAILY.filter(d=>isValidDate(d.date));
+  LPN_RAW = LPN_RAW.filter(d=>isValidDate(d.date));
+  const months = [...new Set([...DAILY.map(d=>d.date.slice(0,7)), ...LPN_RAW.map(d=>d.date.slice(0,7))])].sort();
+
+  // ถ้ายังไม่เคยเลือกเดือน (โหลดครั้งแรก) ให้ใช้เดือนล่าสุดที่มีข้อมูล; ถ้าเลือกไว้แล้วให้คงตัวเลือกเดิมไว้ (รีเฟรชไม่ควรกระโดดเปลี่ยนมุมมอง)
+  if(!currentMonth){
+    currentMonth = months.length ? months[months.length-1] : new Date().toISOString().slice(0,7);
+    currentYear = parseInt(currentMonth.slice(0,4),10);
+  }
+  populateMonthSelect(months);
+  populateYearSelect(months);
+
+  document.getElementById('dataAsOf').querySelector('span').textContent =
+    'อัปเดตล่าสุด ' + new Date(json.serverTime).toLocaleString('th-TH');
+}
+
+async function init(){
+  try{
+    await loadData();
+    setupViewModeControls();
+    document.getElementById('entryDate').value = new Date().toISOString().slice(0,10);
+    renderAll();
+    document.getElementById('loadOverlay').classList.add('hide');
+  }catch(err){
+    document.querySelector('.load-card h3').textContent = 'โหลดข้อมูลไม่สำเร็จ';
+    document.querySelector('.load-card p').textContent = err.message + ' — ตรวจสอบว่าใส่ GAS_URL ถูกต้องหรือยัง';
+  }
+}
+
+document.getElementById('btnRefresh').addEventListener('click', async ()=>{
+  const btn = document.getElementById('btnRefresh');
+  const icon = btn.querySelector('i');
+  btn.disabled = true;
+  icon.classList.add('ti-spin-anim');
+  try{
+    await loadData();
+    renderAll();
+  }catch(err){
+    alert('รีเฟรชข้อมูลไม่สำเร็จ: ' + err.message);
+  }finally{
+    btn.disabled = false;
+    icon.classList.remove('ti-spin-anim');
+  }
+});
+
+function populateMonthSelect(months){
+  const sel = document.getElementById('monthSelect');
+  const all = new Set(months);
+  all.add(currentMonth);
+  // เพิ่มทุกเดือนของปีปัจจุบัน (และปีก่อน/ถัดไปถ้ามีข้อมูลอยู่แล้ว) เพื่อให้เลือก "เดือนที่ยังไม่มีข้อมูล" ได้ด้วย
+  const years = new Set([...months].map(m=>parseInt(m.slice(0,4),10)));
+  years.add(new Date().getFullYear());
+  years.forEach(y=>{
+    for(let m=1; m<=12; m++){ all.add(`${y}-${String(m).padStart(2,'0')}`); }
+  });
+  const sorted = [...all].sort();
+  sel.innerHTML = sorted.map(m=>`<option value="${m}">${monthLabel(m)}</option>`).join('');
+  sel.value = currentMonth;
+  sel.addEventListener('change', ()=>{ currentMonth = sel.value; renderAll(); });
+}
+function monthLabel(m){
+  const [y,mo] = m.split('-');
+  const names = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  return `${names[parseInt(mo,10)]} ${y}`;
+}
+
+function populateYearSelect(months){
+  const sel = document.getElementById('yearSelect');
+  const years = new Set([...months.map(m=>parseInt(m.slice(0,4),10)), currentYear]);
+  const sorted = [...years].sort();
+  sel.innerHTML = sorted.map(y=>`<option value="${y}">ปี ${y}</option>`).join('');
+  sel.value = currentYear;
+  sel.addEventListener('change', ()=>{ currentYear = parseInt(sel.value,10); renderAll(); });
+}
+
+function setupViewModeControls(){
+  const mtdBtn = document.getElementById('modeMtdBtn');
+  const weeklyBtn = document.getElementById('modeWeeklyBtn');
+  const yearlyBtn = document.getElementById('modeYearlyBtn');
+  function applyModeUI(){
+    mtdBtn.classList.toggle('primary', viewMode==='mtd');
+    weeklyBtn.classList.toggle('primary', viewMode==='weekly');
+    yearlyBtn.classList.toggle('primary', viewMode==='yearly');
+    // เดือน/สัปดาห์ ใช้ตัวเลือก "เดือนที่ดู" ร่วมกัน, มีแค่โหมดรายปีที่ใช้ตัวเลือกปีแทน
+    const showMonth = viewMode==='mtd' || viewMode==='weekly';
+    document.getElementById('monthSelectLabel').style.display = showMonth ? '' : 'none';
+    document.getElementById('monthSelect').style.display = showMonth ? '' : 'none';
+    document.getElementById('yearSelectLabel').style.display = viewMode==='yearly' ? '' : 'none';
+    document.getElementById('yearSelect').style.display = viewMode==='yearly' ? '' : 'none';
+  }
+  mtdBtn.addEventListener('click', ()=>{ viewMode='mtd'; applyModeUI(); renderAll(); });
+  weeklyBtn.addEventListener('click', ()=>{ viewMode='weekly'; applyModeUI(); renderAll(); });
+  yearlyBtn.addEventListener('click', ()=>{ viewMode='yearly'; applyModeUI(); renderAll(); });
+  applyModeUI();
+}
+
+/* ---------------- Core KPI calc engine ---------------- */
+/* คำนวณ KPI จาก "ชุดวันที่ที่กำหนด" (ใช้ร่วมกันได้ทั้งโหมด MTD / สัปดาห์ / ปี) */
+function computeKpiForDates(kpiCode, dateList){
+  const kpi = KPIS.find(k=>k.kpi_code===kpiCode);
+  if(!kpi) return null;
+  const dateSet = dateList instanceof Set ? dateList : new Set(dateList);
+  const isLpn = kpi.unit_code === 'LPN';
+  let value = null;
+
+  if(isLpn){
+    const rows = LPN_RAW.filter(r=>dateSet.has(r.date));
+    if(!rows.length) return { value:null, grade:null, score:0, weighted:0, kpi };
+    if(kpi.input_type === 'fixed'){ // LPN08 GMP/AIB
+      const withVal = [...rows].filter(r=>r.gmp!==null && r.gmp!==undefined).sort((a,b)=>a.date.localeCompare(b.date));
+      value = withVal.length ? withVal[withVal.length-1].gmp : null;
+    } else {
+      const formula = LPN_FORMULAS[kpiCode];
+      if(!formula) return { value:null, grade:null, score:0, weighted:0, kpi };
+      let num=0, den=0;
+      rows.forEach(r=>{
+        const {num:n, den:d} = formula(r);
+        if(n===null||n===undefined||d===null||d===undefined) return;
+        num += n; den += d;
+      });
+      value = kpi.input_type==='count' ? num : (den>0 ? num/den : null);
+    }
+  } else {
+    const rows = DAILY.filter(d=>d.kpi_code===kpiCode && dateSet.has(d.date));
+    if(!rows.length) return { value:null, grade:null, score:0, weighted:0, kpi };
+    if(kpi.input_type === 'ratio'){
+      const num = rows.reduce((s,r)=>s+(r.numerator||0),0);
+      const den = rows.reduce((s,r)=>s+(r.denominator||0),0);
+      value = den > 0 ? num/den : null;
+    } else if(kpi.input_type === 'count'){
+      value = rows.reduce((s,r)=>s+(r.numerator||0),0);
+    } else { // fixed
+      const sorted = [...rows].sort((a,b)=>a.date.localeCompare(b.date));
+      value = sorted[sorted.length-1].numerator;
+    }
+  }
+
+  const grade = value===null ? null : gradeFor(value, kpi);
+  const score = grade ? GRADE_SCORE[grade] : 0;
+  const weighted = score * Number(kpi.weight);
+  return { value, grade, score, weighted, kpi };
+}
+
+function datesInMonth(month){
+  const nDays = daysInMonth(month);
+  return Array.from({length:nDays}, (_,i)=>dateStr(month, i+1));
+}
+
+function mtdForKpi(kpiCode, month){
+  return computeKpiForDates(kpiCode, datesInMonth(month));
+}
+
+function gradeFor(value, kpi){
+  const {direction, grade_A, grade_B, grade_C, grade_D} = kpi;
+  if(direction === 'higher_better'){
+    if(value >= grade_A) return 'A';
+    if(value >= grade_B) return 'B';
+    if(value >= grade_C) return 'C';
+    if(value >= grade_D) return 'D';
+    return 'F';
+  } else {
+    if(value <= grade_A) return 'A';
+    if(value <= grade_B) return 'B';
+    if(value <= grade_C) return 'C';
+    if(value <= grade_D) return 'D';
+    return 'F';
+  }
+}
+
+// น้ำหนัก KPI ภายในแต่ละหน่วยงานถูกออกแบบให้รวมกันเป็น 1.0 เสมอ
+// ดังนั้นคะแนนรวมของหน่วยงาน = ผลรวมคะแนนถ่วงน้ำหนักของทุก KPI ตรงๆ (ไม่ต้องหารซ้ำ)
+function unitScoreForDates(unitCode, dateList){
+  const kpis = KPIS.filter(k=>k.unit_code===unitCode && (k.active===true || k.active==='TRUE' || k.active===1));
+  const dateSet = dateList instanceof Set ? dateList : new Set(dateList);
+  const rows = kpis.map(k=>({...computeKpiForDates(k.kpi_code, dateSet)}));
+  const weightedSum = rows.reduce((s,r)=>s+(r?r.weighted:0),0);
+  return { rows, score: weightedSum };
+}
+function unitScore(unitCode, month){
+  return unitScoreForDates(unitCode, datesInMonth(month));
+}
+function unitWeightInParent(unitCode){
+  const u = UNITS.find(x=>x.unit_code===unitCode);
+  return u ? Number(u.weight_in_parent) : 0;
+}
+
+/* แบ่งวันในเดือนออกเป็นสัปดาห์ (สัปดาห์ที่ 1 = วันที่ 1-7, สัปดาห์ที่ 2 = 8-14, ...) */
+function weeksOfMonth(month){
+  const nDays = daysInMonth(month);
+  const weeks = [];
+  for(let start=1; start<=nDays; start+=7){
+    const end = Math.min(start+6, nDays);
+    const dates = [];
+    for(let d=start; d<=end; d++) dates.push(dateStr(month, d));
+    weeks.push({ index:weeks.length+1, label:`สัปดาห์ ${weeks.length+1}`, range:`${start}-${end}`, dates });
+  }
+  return weeks;
+}
+
+
+const UNIT_ICONS = {
+  dept: { icon:'ti-building-fortress', color:'var(--primary)' },
+  LPN:  { icon:'ti-building-warehouse', color:'var(--primary)' },
+  BNA:  { icon:'ti-building-store', color:'var(--cc)' },
+  BNA_AB: { icon:'ti-box', color:'var(--ab)' },
+  BNA_CC: { icon:'ti-snowflake', color:'var(--cc)' }
+};
+const GRADE_TINT = { A:'#E1F5EE', B:'#E7F0FE', C:'#FAEEDA', D:'#FBE4D5', F:'#FCEBEB' };
+function scoreRingSVG(score, grade, ringColor){
+  const r = 30, c = 2*Math.PI*r;
+  const pct = Math.max(0, Math.min(1, score/4));
+  const dash = pct*c;
+  return `
+    <svg width="72" height="72" viewBox="0 0 72 72" style="flex:0 0 auto;">
+      <circle cx="36" cy="36" r="${r}" fill="none" stroke="#E3E8F0" stroke-width="7"/>
+      <circle cx="36" cy="36" r="${r}" fill="none" stroke="${ringColor}" stroke-width="7"
+        stroke-linecap="round" stroke-dasharray="${dash.toFixed(1)} ${c.toFixed(1)}"
+        transform="rotate(-90 36 36)"/>
+      <text x="36" y="33" text-anchor="middle" font-size="15" font-weight="700" fill="#1A2333" font-family="'IBM Plex Mono',monospace">${score.toFixed(2)}</text>
+      <text x="36" y="49" text-anchor="middle" font-size="10" font-weight="700" fill="${ringColor}">เกรด ${grade}</text>
+    </svg>`;
+}
+function mkHeroCard(unitKey, label, score, extra){
+  const meta = UNIT_ICONS[unitKey] || UNIT_ICONS.dept;
+  const grade = scoreToGrade(score);
+  const ringColorMap = { A:'#1D9E75', B:'#2A5DB0', C:'#BA7517', D:'#B85C1F', F:'#A32D2D' };
+  const ringColor = ringColorMap[grade];
+  return `
+    <div class="card hero" style="border-left:4px solid ${meta.color}; background:linear-gradient(135deg, ${GRADE_TINT[grade]}, #fff 65%);">
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:10px;">
+        <div style="flex:1 1 auto; min-width:0;">
+          <div class="card-label" style="display:flex;align-items:center;gap:6px;">
+            <i class="ti ${meta.icon}" style="font-size:16px;color:${meta.color};"></i> ${label}
+          </div>
+          <div class="card-value" style="font-size:22px;">${score.toFixed(2)} <span class="unit">/ 4.00</span></div>
+          <div class="card-sub">${gradeIcon(grade)} ${extra||''}</div>
+        </div>
+        ${scoreRingSVG(score, grade, ringColor)}
+      </div>
+    </div>`;
+}
+function gradeIcon(grade){
+  const map = { A:'<i class="ti ti-mood-smile"></i>', B:'<i class="ti ti-mood-happy"></i>', C:'<i class="ti ti-mood-neutral"></i>', D:'<i class="ti ti-mood-sad"></i>', F:'<i class="ti ti-mood-cry"></i>' };
+  return map[grade] || '';
+}
+
+function scoreToGrade(score){
+  if(score >= 3.5) return 'A';
+  if(score >= 2.5) return 'B';
+  if(score >= 1.5) return 'C';
+  if(score >= 0.5) return 'D';
+  return 'F';
+}
+
+/* ---------------- Render ---------------- */
+function renderAll(){
+  const ab  = unitScore('BNA_AB', currentMonth);
+  const cc  = unitScore('BNA_CC', currentMonth);
+  renderUnitDetail('abUnitCard', 'BNA_AB', 'คลังบางนา AB', ab);
+  renderUnitDetail('ccUnitCard', 'BNA_CC', 'คลังบางนา CC', cc);
+
+  if(viewMode === 'mtd'){
+    const lpn = unitScore('LPN', currentMonth);
+    const bnaScore = ab.score * unitWeightInParent('BNA_AB') + cc.score * unitWeightInParent('BNA_CC');
+    const deptScore = lpn.score * unitWeightInParent('LPN') + bnaScore * unitWeightInParent('BNA');
+    renderOverview(lpn, ab, cc, bnaScore, deptScore);
+    renderUnitDetail('lpnUnitCard', 'LPN', 'ส่วนงานคลังลำพูน', lpn);
+  } else if(viewMode === 'weekly'){
+    renderOverviewWeekly(currentMonth);
+    renderUnitDetailWeekly('lpnUnitCard', 'LPN', 'ส่วนงานคลังลำพูน', currentMonth);
+  } else {
+    renderOverviewYearly(currentYear);
+    renderUnitDetailYearly('lpnUnitCard', 'LPN', 'ส่วนงานคลังลำพูน', currentYear);
+  }
+
+  renderEntryForm();
+  renderSettings();
+}
+
+function renderOverview(lpn, ab, cc, bnaScore, deptScore){
+  document.getElementById('overviewChartTitle').innerHTML = '<i class="ti ti-chart-bar"></i> เปรียบเทียบคะแนนหน่วยงาน';
+  document.getElementById('watchlistTitle').innerHTML = '<i class="ti ti-alert-triangle"></i> KPI ที่ต้องเฝ้าระวัง (เกรด C ลงไป)';
+  const cardsEl = document.getElementById('overviewCards');
+  cardsEl.innerHTML =
+    mkHeroCard('dept', 'ภาพรวมแผนกคลังสินค้า', deptScore, monthLabel(currentMonth)) +
+    mkHeroCard('LPN', 'ส่วนงานคลังลำพูน', lpn.score, '<i class="ti ti-truck-delivery"></i> 3PL PepsiCo') +
+    mkHeroCard('BNA', 'ส่วนงานคลังบางนา', bnaScore, `AB ${ab.score.toFixed(2)} · CC ${cc.score.toFixed(2)}`);
+
+  // chart
+  const ctx = document.getElementById('overviewChart');
+  if(overviewChartInstance) overviewChartInstance.destroy();
+  overviewChartInstance = new Chart(ctx, {
+    type:'bar',
+    data:{
+      labels:['คลังลำพูน','คลังบางนา AB','คลังบางนา CC','ภาพรวมแผนก'],
+      datasets:[{
+        label:'คะแนน (เต็ม 4)',
+        data:[lpn.score, ab.score, cc.score, deptScore],
+        backgroundColor:['#0C447C','#E2583E','#3fa9b4','#8B96AC'],
+        borderRadius:6, maxBarThickness:56
+      }]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ top:20 } },
+      scales:{ y:{ min:0, max:4, ticks:{stepSize:1} } },
+      plugins:{
+        legend:{display:false},
+        datalabels:{
+          anchor:'end', align:'top', offset:4,
+          color:'#1A2333', font:{weight:'700', size:12},
+          formatter:v=>v!==null && v!==undefined ? v.toFixed(2) : ''
+        }
+      }
+    }
+  });
+
+  // watchlist: KPI ที่เกรด C ลงไป
+  const allRows = [...lpn.rows.map(r=>({...r,unit:'ลำพูน'})), ...ab.rows.map(r=>({...r,unit:'บางนา AB'})), ...cc.rows.map(r=>({...r,unit:'บางนา CC'}))];
+  const bad = allRows.filter(r=>r.grade && (r.grade==='C'||r.grade==='D'||r.grade==='F'));
+  const tbody = document.querySelector('#watchlist tbody');
+  if(!bad.length){
+    tbody.innerHTML = `<tr><td style="color:var(--ok);font-weight:600;"><i class="ti ti-circle-check"></i> ไม่มี KPI ที่ต่ำกว่าเกรด B ในเดือนนี้</td></tr>`;
+  } else {
+    tbody.innerHTML = bad.map(r=>`
+      <tr>
+        <td><span class="weight-tag">${r.unit}</span></td>
+        <td class="kpi-name">${r.kpi.kpi_name}</td>
+        <td>${fmtValue(r.value, r.kpi)}</td>
+        <td><span class="gradebadge ${r.grade}">${r.grade}</span></td>
+      </tr>`).join('');
+  }
+}
+
+function fmtValue(value, kpi){
+  if(value===null || value===undefined) return '—';
+  if(kpi.uom === '%') return (value*100).toFixed(4)+'%';
+  if(kpi.uom === 'ครั้ง') return value + ' ครั้ง';
+  return value;
+}
+
+function renderUnitDetail(elId, unitCode, unitLabel, unitResult){
+  const el = document.getElementById(elId);
+  const rows = unitResult.rows;
+  const meta = UNIT_ICONS[unitCode] || UNIT_ICONS.dept;
+  el.innerHTML = `
+    <div class="unitcard">
+      <div class="unitcard-head">
+        <div class="name"><i class="ti ${meta.icon}" style="color:${meta.color};margin-right:6px;"></i>${unitLabel} — คะแนนรวม ${unitResult.score.toFixed(2)} / 4.00
+          <span class="gradebadge ${scoreToGrade(unitResult.score)}" style="margin-left:8px;">${gradeIcon(scoreToGrade(unitResult.score))} ${scoreToGrade(unitResult.score)}</span>
+        </div>
+        <div class="sub"><i class="ti ti-calendar-event"></i> ${monthLabel(currentMonth)}</div>
+      </div>
+      <div class="unitcard-body">
+        <table>
+          <thead><tr><th><i class="ti ti-list-check"></i> KPI</th><th><i class="ti ti-scale"></i> น้ำหนัก</th><th><i class="ti ti-chart-line"></i> ผลงาน MTD</th><th><i class="ti ti-award"></i> เกรด</th></tr></thead>
+          <tbody>
+            ${rows.map(r=>`
+              <tr>
+                <td><div class="kpi-name">${r.kpi.kpi_name}</div><div class="kpi-formula">${r.kpi.formula_desc}</div></td>
+                <td class="weight-tag">${(Number(r.kpi.weight)*100).toFixed(0)}%</td>
+                <td>${fmtValue(r.value, r.kpi)}</td>
+                <td>${r.grade ? `<span class="gradebadge ${r.grade}">${gradeIcon(r.grade)} ${r.grade}</span>` : '<span class="weight-tag">ไม่มีข้อมูล</span>'}</td>
+              </tr>`).join('')}
+          </tbody>
+        </table>
+      </div>
+    </div>`;
+}
+
+const MONTH_SHORT_TH = ['','ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+function pad2(n){ return String(n).padStart(2,'0'); }
+
+/* คำนวณคะแนนหน่วยงานของทุกเดือนในปีที่กำหนด -> [{month, score, hasData}] * 12 */
+function yearlyUnitScoreSeries(unitCode, year){
+  return Array.from({length:12}, (_,i)=>{
+    const m = i+1;
+    const monthStr = `${year}-${pad2(m)}`;
+    const res = unitScore(unitCode, monthStr);
+    const hasData = res.rows.some(r=>r.value!==null && r.value!==undefined);
+    return { month:m, score: res.score, hasData, rows: res.rows };
+  });
+}
+
+/* ---------------- Overview: โหมดรายปี ---------------- */
+function renderOverviewYearly(year){
+  document.getElementById('overviewChartTitle').innerHTML = '<i class="ti ti-chart-bar"></i> แนวโน้มคะแนนรายเดือนตลอดปี';
+  document.getElementById('watchlistTitle').innerHTML = '<i class="ti ti-calendar-stats"></i> คะแนนภาพรวมแผนกรายเดือน';
+  const lpnSeries = yearlyUnitScoreSeries('LPN', year);
+  const abSeries  = yearlyUnitScoreSeries('BNA_AB', year);
+  const ccSeries  = yearlyUnitScoreSeries('BNA_CC', year);
+  const bnaSeries = lpnSeries.map((_,i)=>({
+    month:i+1,
+    score: abSeries[i].score*unitWeightInParent('BNA_AB') + ccSeries[i].score*unitWeightInParent('BNA_CC'),
+    hasData: abSeries[i].hasData || ccSeries[i].hasData
+  }));
+  const deptSeries = lpnSeries.map((_,i)=>({
+    month:i+1,
+    score: lpnSeries[i].score*unitWeightInParent('LPN') + bnaSeries[i].score*unitWeightInParent('BNA'),
+    hasData: lpnSeries[i].hasData || bnaSeries[i].hasData
+  }));
+
+  const avg = arr => { const v=arr.filter(x=>x.hasData).map(x=>x.score); return v.length? v.reduce((a,b)=>a+b,0)/v.length : 0; };
+  const deptAvg = avg(deptSeries), lpnAvg = avg(lpnSeries), bnaAvg = avg(bnaSeries);
+
+  const cardsEl = document.getElementById('overviewCards');
+  cardsEl.innerHTML =
+    mkHeroCard('dept', 'ภาพรวมแผนกคลังสินค้า (เฉลี่ยทั้งปี)', deptAvg, `<i class="ti ti-calendar-stats"></i> ปี ${year}`) +
+    mkHeroCard('LPN', 'ส่วนงานคลังลำพูน (เฉลี่ยทั้งปี)', lpnAvg, '<i class="ti ti-truck-delivery"></i> 3PL PepsiCo') +
+    mkHeroCard('BNA', 'ส่วนงานคลังบางนา (เฉลี่ยทั้งปี)', bnaAvg, `AB ${avg(abSeries).toFixed(2)} · CC ${avg(ccSeries).toFixed(2)}`);
+
+  const ctx = document.getElementById('overviewChart');
+  if(overviewChartInstance) overviewChartInstance.destroy();
+  const labels = MONTH_SHORT_TH.slice(1);
+  const toData = series => series.map(s=>s.hasData ? Number(s.score.toFixed(2)) : null);
+  overviewChartInstance = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        { label:'คลังลำพูน', data:toData(lpnSeries), borderColor:'#0C447C', backgroundColor:'#0C447C', tension:.3, spanGaps:true,
+          datalabels:{ display:true, align:'top', offset:6, color:'#0C447C', font:{weight:'700', size:10.5}, formatter:v=>v!==null?v.toFixed(2):'' } },
+        { label:'บางนา AB', data:toData(abSeries), borderColor:'#E2583E', backgroundColor:'#E2583E', tension:.3, spanGaps:true,
+          datalabels:{ display:true, align:'bottom', offset:6, color:'#E2583E', font:{weight:'700', size:10.5}, formatter:v=>v!==null?v.toFixed(2):'' } },
+        { label:'บางนา CC', data:toData(ccSeries), borderColor:'#3fa9b4', backgroundColor:'#3fa9b4', tension:.3, spanGaps:true,
+          datalabels:{ display:true, align:'top', offset:6, color:'#3fa9b4', font:{weight:'700', size:10.5}, formatter:v=>v!==null?v.toFixed(2):'' } },
+        { label:'ภาพรวมแผนก', data:toData(deptSeries), borderColor:'#8B96AC', backgroundColor:'#8B96AC', borderDash:[5,4], tension:.3, spanGaps:true,
+          datalabels:{ display:true, align:'top', offset:6, color:'#5F6B85', font:{weight:'700', size:10.5}, formatter:v=>v!==null?v.toFixed(2):'' } }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ top:20, bottom:6 } },
+      scales:{ y:{ min:0, max:4, ticks:{stepSize:1} } },
+      plugins:{ legend:{display:true, position:'bottom'} }
+    }
+  });
+  const tbody = document.querySelector('#watchlist tbody');
+  tbody.innerHTML = deptSeries.map((s,i)=>`
+    <tr>
+      <td class="weight-tag">${MONTH_SHORT_TH[i+1]} ${year}</td>
+      <td>${s.hasData ? s.score.toFixed(2)+' / 4.00' : 'ไม่มีข้อมูล'}</td>
+      <td>${s.hasData ? `<span class="gradebadge ${scoreToGrade(s.score)}">${scoreToGrade(s.score)}</span>` : '—'}</td>
+    </tr>`).join('');
+}
+
+/* ---------------- คลังลำพูน: โหมดรายปี (ตาราง KPI x เดือน) ---------------- */
+function renderUnitDetailYearly(elId, unitCode, unitLabel, year){
+  const kpis = KPIS.filter(k=>k.unit_code===unitCode && (k.active===true || k.active==='TRUE' || k.active===1));
+  const monthly = Array.from({length:12}, (_,i)=>{
+    const monthStr = `${year}-${pad2(i+1)}`;
+    return kpis.map(k=>mtdForKpi(k.kpi_code, monthStr));
+  }); // monthly[monthIdx][kpiIdx]
+
+  const yearScoreSeries = yearlyUnitScoreSeries(unitCode, year);
+  const yearAvg = (()=>{ const v=yearScoreSeries.filter(s=>s.hasData).map(s=>s.score); return v.length? v.reduce((a,b)=>a+b,0)/v.length : 0; })();
+
+  const el = document.getElementById(elId);
+  const meta = UNIT_ICONS[unitCode] || UNIT_ICONS.dept;
+  el.innerHTML = `
+    <div class="unitcard">
+      <div class="unitcard-head">
+        <div class="name"><i class="ti ${meta.icon}" style="color:${meta.color};margin-right:6px;"></i>${unitLabel} — เฉลี่ยทั้งปี ${yearAvg.toFixed(2)} / 4.00
+          <span class="gradebadge ${scoreToGrade(yearAvg)}" style="margin-left:8px;">${gradeIcon(scoreToGrade(yearAvg))} ${scoreToGrade(yearAvg)}</span>
+        </div>
+        <div class="sub"><i class="ti ti-calendar-stats"></i> ปี ${year}</div>
+      </div>
+      <div class="unitcard-body">
+        <div class="daygrid-wrap" style="max-height:none;">
+          <table class="daygrid">
+            <thead>
+              <tr>
+                <th class="rowlabel">KPI</th>
+                ${MONTH_SHORT_TH.slice(1).map(m=>`<th>${m}</th>`).join('')}
+                <th>เฉลี่ย</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${kpis.map((k,ki)=>{
+                const cells = monthly.map(monthRows=>{
+                  const r = monthRows[ki];
+                  if(!r || r.grade===null || r.grade===undefined) return `<td class="weight-tag">—</td>`;
+                  return `<td><span class="gradebadge ${r.grade}">${r.grade}</span><div class="weight-tag" style="font-size:9.5px;margin-top:2px;white-space:nowrap;">${fmtValue(r.value,k)}</div></td>`;
+                }).join('');
+                const scores = monthly.map(monthRows=>monthRows[ki]).filter(r=>r && r.grade);
+                const avgScore = scores.length ? scores.reduce((s,r)=>s+r.score,0)/scores.length : null;
+                return `<tr>
+                  <td class="rowlabel">${k.kpi_name}</td>
+                  ${cells}
+                  <td>${avgScore!==null ? `<span class="gradebadge ${scoreToGrade(avgScore)}">${scoreToGrade(avgScore)}</span><div class="weight-tag" style="font-size:9.5px;margin-top:2px;">${avgScore.toFixed(2)}/4.00</div>` : '—'}</td>
+                </tr>`;
+              }).join('')}
+              <tr class="section-row"><td colspan="14" style="text-align:left;">คะแนนรวมหน่วยงาน (เต็ม 4.00) ต่อเดือน</td></tr>
+              <tr>
+                <td class="rowlabel"><b>คะแนนรวม</b></td>
+                ${yearScoreSeries.map(s=>`<td class="mono">${s.hasData ? s.score.toFixed(2) : '—'}</td>`).join('')}
+                <td class="mono"><b>${yearAvg.toFixed(2)}</b></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+}
+
+/* ---------------- Overview: โหมดรายสัปดาห์ ---------------- */
+function renderOverviewWeekly(month){
+  const weeks = weeksOfMonth(month);
+  const lpnSeries = weeks.map(w=>{ const r=unitScoreForDates('LPN', w.dates); return {...w, score:r.score, hasData:r.rows.some(x=>x.value!==null&&x.value!==undefined)}; });
+  const abSeries  = weeks.map(w=>{ const r=unitScoreForDates('BNA_AB', w.dates); return {...w, score:r.score, hasData:r.rows.some(x=>x.value!==null&&x.value!==undefined)}; });
+  const ccSeries  = weeks.map(w=>{ const r=unitScoreForDates('BNA_CC', w.dates); return {...w, score:r.score, hasData:r.rows.some(x=>x.value!==null&&x.value!==undefined)}; });
+  const bnaSeries = weeks.map((w,i)=>({...w,
+    score: abSeries[i].score*unitWeightInParent('BNA_AB') + ccSeries[i].score*unitWeightInParent('BNA_CC'),
+    hasData: abSeries[i].hasData || ccSeries[i].hasData
+  }));
+  const deptSeries = weeks.map((w,i)=>({...w,
+    score: lpnSeries[i].score*unitWeightInParent('LPN') + bnaSeries[i].score*unitWeightInParent('BNA'),
+    hasData: lpnSeries[i].hasData || bnaSeries[i].hasData
+  }));
+
+  document.getElementById('overviewChartTitle').innerHTML = '<i class="ti ti-chart-bar"></i> แนวโน้มคะแนนรายสัปดาห์';
+  document.getElementById('watchlistTitle').innerHTML = '<i class="ti ti-calendar-week"></i> คะแนนภาพรวมแผนกรายสัปดาห์';
+
+  const latestIdx = [...deptSeries].map((s,i)=>s.hasData?i:-1).filter(i=>i>=0).pop();
+  const latestDept = latestIdx!==undefined ? deptSeries[latestIdx].score : 0;
+  const latestLpn  = latestIdx!==undefined ? lpnSeries[latestIdx].score : 0;
+  const latestBna  = latestIdx!==undefined ? bnaSeries[latestIdx].score : 0;
+
+  const cardsEl = document.getElementById('overviewCards');
+  cardsEl.innerHTML =
+    mkHeroCard('dept', 'ภาพรวมแผนกคลังสินค้า (สัปดาห์ล่าสุด)', latestDept, monthLabel(month)) +
+    mkHeroCard('LPN', 'ส่วนงานคลังลำพูน (สัปดาห์ล่าสุด)', latestLpn, '<i class="ti ti-truck-delivery"></i> 3PL PepsiCo') +
+    mkHeroCard('BNA', 'ส่วนงานคลังบางนา (สัปดาห์ล่าสุด)', latestBna, `AB ${(latestIdx!==undefined?abSeries[latestIdx].score:0).toFixed(2)} · CC ${(latestIdx!==undefined?ccSeries[latestIdx].score:0).toFixed(2)}`);
+
+  const ctx = document.getElementById('overviewChart');
+  if(overviewChartInstance) overviewChartInstance.destroy();
+  const labels = weeks.map(w=>`${w.label} (${w.range})`);
+  const toData = series => series.map(s=>s.hasData ? Number(s.score.toFixed(2)) : null);
+  overviewChartInstance = new Chart(ctx, {
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        { label:'คลังลำพูน', data:toData(lpnSeries), borderColor:'#0C447C', backgroundColor:'#0C447C', tension:.3, spanGaps:true,
+          datalabels:{ display:true, align:'top', offset:6, color:'#0C447C', font:{weight:'700', size:10.5}, formatter:v=>v!==null?v.toFixed(2):'' } },
+        { label:'บางนา AB', data:toData(abSeries), borderColor:'#E2583E', backgroundColor:'#E2583E', tension:.3, spanGaps:true,
+          datalabels:{ display:true, align:'bottom', offset:6, color:'#E2583E', font:{weight:'700', size:10.5}, formatter:v=>v!==null?v.toFixed(2):'' } },
+        { label:'บางนา CC', data:toData(ccSeries), borderColor:'#3fa9b4', backgroundColor:'#3fa9b4', tension:.3, spanGaps:true,
+          datalabels:{ display:true, align:'top', offset:6, color:'#3fa9b4', font:{weight:'700', size:10.5}, formatter:v=>v!==null?v.toFixed(2):'' } },
+        { label:'ภาพรวมแผนก', data:toData(deptSeries), borderColor:'#8B96AC', backgroundColor:'#8B96AC', borderDash:[5,4], tension:.3, spanGaps:true,
+          datalabels:{ display:true, align:'top', offset:6, color:'#5F6B85', font:{weight:'700', size:10.5}, formatter:v=>v!==null?v.toFixed(2):'' } }
+      ]
+    },
+    options:{
+      responsive:true, maintainAspectRatio:false,
+      layout:{ padding:{ top:20, bottom:6 } },
+      scales:{ y:{ min:0, max:4, ticks:{stepSize:1} } },
+      plugins:{ legend:{display:true, position:'bottom'} }
+    }
+  });
+
+  const tbody = document.querySelector('#watchlist tbody');
+  tbody.innerHTML = deptSeries.map(s=>`
+    <tr>
+      <td class="weight-tag">${s.label} (วันที่ ${s.range})</td>
+      <td>${s.hasData ? s.score.toFixed(2)+' / 4.00' : 'ไม่มีข้อมูล'}</td>
+      <td>${s.hasData ? `<span class="gradebadge ${scoreToGrade(s.score)}">${scoreToGrade(s.score)}</span>` : '—'}</td>
+    </tr>`).join('');
+}
+
+/* ---------------- คลังลำพูน: โหมดรายสัปดาห์ (ตาราง KPI x สัปดาห์ ภายในเดือนที่เลือก) ---------------- */
+function renderUnitDetailWeekly(elId, unitCode, unitLabel, month){
+  const kpis = KPIS.filter(k=>k.unit_code===unitCode && (k.active===true || k.active==='TRUE' || k.active===1));
+  const weeks = weeksOfMonth(month);
+  const weeklyRows = weeks.map(w=>kpis.map(k=>computeKpiForDates(k.kpi_code, w.dates))); // weeklyRows[weekIdx][kpiIdx]
+
+  const weekScoreSeries = weeks.map(w=>{
+    const r = unitScoreForDates(unitCode, w.dates);
+    return { ...w, score:r.score, hasData:r.rows.some(x=>x.value!==null&&x.value!==undefined) };
+  });
+  const validScores = weekScoreSeries.filter(s=>s.hasData).map(s=>s.score);
+  const monthAvg = validScores.length ? validScores.reduce((a,b)=>a+b,0)/validScores.length : 0;
+
+  const el = document.getElementById(elId);
+  const meta = UNIT_ICONS[unitCode] || UNIT_ICONS.dept;
+  el.innerHTML = `
+    <div class="unitcard">
+      <div class="unitcard-head">
+        <div class="name"><i class="ti ${meta.icon}" style="color:${meta.color};margin-right:6px;"></i>${unitLabel} — เฉลี่ยเดือนนี้ ${monthAvg.toFixed(2)} / 4.00
+          <span class="gradebadge ${scoreToGrade(monthAvg)}" style="margin-left:8px;">${gradeIcon(scoreToGrade(monthAvg))} ${scoreToGrade(monthAvg)}</span>
+        </div>
+        <div class="sub"><i class="ti ti-calendar-week"></i> ${monthLabel(month)} — แบ่งเป็น ${weeks.length} สัปดาห์</div>
+      </div>
+      <div class="unitcard-body">
+        <div class="daygrid-wrap" style="max-height:none;">
+          <table class="daygrid">
+            <thead>
+              <tr>
+                <th class="rowlabel">KPI</th>
+                ${weeks.map(w=>`<th>${w.label}<br><span style="font-weight:400;">(${w.range})</span></th>`).join('')}
+                <th>เฉลี่ย</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${kpis.map((k,ki)=>{
+                const cells = weeklyRows.map(weekRows=>{
+                  const r = weekRows[ki];
+                  if(!r || r.grade===null || r.grade===undefined) return `<td class="weight-tag">—</td>`;
+                  return `<td><span class="gradebadge ${r.grade}">${r.grade}</span><div class="weight-tag" style="font-size:9.5px;margin-top:2px;white-space:nowrap;">${fmtValue(r.value,k)}</div></td>`;
+                }).join('');
+                const scores = weeklyRows.map(weekRows=>weekRows[ki]).filter(r=>r && r.grade);
+                const avgScore = scores.length ? scores.reduce((s,r)=>s+r.score,0)/scores.length : null;
+                return `<tr>
+                  <td class="rowlabel">${k.kpi_name}</td>
+                  ${cells}
+                  <td>${avgScore!==null ? `<span class="gradebadge ${scoreToGrade(avgScore)}">${scoreToGrade(avgScore)}</span><div class="weight-tag" style="font-size:9.5px;margin-top:2px;">${avgScore.toFixed(2)}/4.00</div>` : '—'}</td>
+                </tr>`;
+              }).join('')}
+              <tr class="section-row"><td colspan="${2+weeks.length}" style="text-align:left;">คะแนนรวมหน่วยงาน (เต็ม 4.00) ต่อสัปดาห์</td></tr>
+              <tr>
+                <td class="rowlabel"><b>คะแนนรวม</b></td>
+                ${weekScoreSeries.map(s=>`<td class="mono">${s.hasData ? s.score.toFixed(2) : '—'}</td>`).join('')}
+                <td class="mono"><b>${monthAvg.toFixed(2)}</b></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>`;
+}
+
+function renderEntryForm(){
+  const unitCode = document.getElementById('entryUnit').value;
+  const isLpn = unitCode === 'LPN';
+
+  document.getElementById('entryDateLabel').style.display = isLpn ? 'none' : '';
+  document.getElementById('entryDate').style.display = isLpn ? 'none' : '';
+  document.getElementById('entryHint').textContent = isLpn
+    ? `แสดง/กรอกทั้งเดือน ${monthLabel(currentMonth)} — เปลี่ยนเดือนได้ที่ตัวเลือก "เดือนที่ดู" ด้านบน`
+    : '';
+  setEntrySaveButtonsState(false, isLpn
+    ? '<i class="ti ti-device-floppy"></i> บันทึกทั้งเดือน'
+    : '<i class="ti ti-device-floppy"></i> บันทึกข้อมูลวันนี้');
+
+  if(isLpn){ renderLpnEntryGrid(); return; }
+
+  const kpis = KPIS.filter(k=>k.unit_code===unitCode);
+  const date = document.getElementById('entryDate').value;
+
+  const existingByCode = {};
+  DAILY.filter(d=>d.date===date).forEach(d=>{ existingByCode[d.kpi_code]=d; });
+
+  const el = document.getElementById('entryForm');
+  el.innerHTML = `
+    <div class="formgrid" style="font-weight:700;font-size:11px;color:var(--muted);text-transform:uppercase;background:var(--panel2);">
+      <div>KPI</div><div>ตัวตั้ง (numerator)</div><div>ตัวหาร (denominator)</div><div>หมายเหตุ</div>
+    </div>
+    ${kpis.map(k=>{
+      const ex = existingByCode[k.kpi_code];
+      const isRatio = k.input_type==='ratio';
+      const isCount = k.input_type==='count';
+      const isFixed = k.input_type==='fixed';
+      return `
+      <div class="formgrid" data-kpi="${k.kpi_code}" data-type="${k.input_type}">
+        <div>
+          <div class="flabel">${k.kpi_name}</div>
+          <div class="fformula">${k.formula_desc}</div>
+        </div>
+        <input type="number" step="any" class="f-num" placeholder="${isCount||isFixed?'ค่า':'ตัวตั้ง'}" value="${ex?ex.numerator:''}">
+        <input type="number" step="any" class="f-den" placeholder="ตัวหาร" value="${ex?ex.denominator:(isRatio?'':'1')}" ${isRatio?'':'disabled'}>
+        <input type="text" class="f-note" placeholder="หมายเหตุ (ถ้ามี)" value="${ex?ex.note:''}">
+      </div>`;
+    }).join('')}
+  `;
+}
+
+function daysInMonth(month){
+  const parts = String(month||'').split('-');
+  const y = parseInt(parts[0],10), m = parseInt(parts[1],10);
+  if(!y || !m || m<1 || m>12){
+    console.warn('daysInMonth: ค่าเดือนไม่ถูกต้อง =', month, '— ใช้เดือนปัจจุบันแทน');
+    const now = new Date();
+    return new Date(now.getFullYear(), now.getMonth()+1, 0).getDate();
+  }
+  return new Date(y, m, 0).getDate();
+}
+function dateStr(month, day){
+  return `${month}-${String(day).padStart(2,'0')}`;
+}
+function dayOfWeekTH(month, day){
+  const names=['อา','จ','อ','พ','พฤ','ศ','ส'];
+  const [y,m]=month.split('-').map(Number);
+  return names[new Date(y, m-1, day).getDay()];
+}
+
+/* ----- ลำพูน: ตารางกรอก+แสดงผลทั้งเดือน (แถว=KPI/รายการดิบ, คอลัมน์=วันที่) ----- */
+function renderLpnEntryGrid(){
+  const month = currentMonth;
+  const nDays = daysInMonth(month);
+  const days = Array.from({length:nDays}, (_,i)=>i+1);
+  const lpnKpis = KPIS.filter(k=>k.unit_code==='LPN').sort((a,b)=>a.kpi_code.localeCompare(b.kpi_code));
+
+  // เตรียมค่าที่มีอยู่แล้วให้ค้นหาเร็ว: rawByDate[date][field]
+  const rawByDate = {};
+  LPN_RAW.forEach(r=>{ rawByDate[r.date] = r; });
+
+  const el = document.getElementById('entryForm');
+  const dayHeaderCells = days.map(d=>`<th>${d}<br><span style="font-weight:400;">${dayOfWeekTH(month,d)}</span></th>`).join('');
+
+  const kpiRows = lpnKpis.map((k,i)=>{
+    const target = k.grade_A;
+    const dayCells = days.map(d=>{
+      const date = dateStr(month, d);
+      return `<td class="kpi-cell" id="kpiCell_${k.kpi_code}_${d}">—</td>`;
+    }).join('');
+    return `<tr>
+      <td class="rowlabel"><b>${i+1}.</b> ${k.kpi_name}</td>
+      <td class="target-col weight-tag">${fmtValue(target,k)}</td>
+      <td class="mtd-col" id="mtdCell_${k.kpi_code}">—</td>
+      ${dayCells}
+    </tr>`;
+  }).join('');
+
+  const rawRows = RAW_FIELDS.map(f=>{
+    const dayCells = days.map(d=>{
+      const date = dateStr(month, d);
+      const existing = rawByDate[date];
+      const v = existing && existing[f.id]!==null && existing[f.id]!==undefined ? existing[f.id] : '';
+      return `<td class="daycell"><input type="number" step="any" class="lpn-grid-input" data-field="${f.id}" data-date="${date}" value="${v}"></td>`;
+    }).join('');
+    return `<tr>
+      <td class="rowlabel">${f.label} <span class="weight-tag">(${f.uom})</span></td>
+      <td class="target-col"></td><td class="mtd-col"></td>
+      ${dayCells}
+    </tr>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="sub" style="margin-bottom:8px;"><i class="ti ti-calendar"></i> เดือน <b>${month}</b> — ${nDays} วัน
+      &nbsp;·&nbsp; <i class="ti ti-clipboard-copy"></i> คัดลอกข้อมูลจาก Google Sheet มาวางในช่องแรกได้เลย ระบบจะกระจายค่าไปทุกช่องให้อัตโนมัติ
+    </div>
+    <div class="daygrid-wrap">
+      <table class="daygrid">
+        <thead>
+          <tr>
+            <th class="rowlabel">KPI</th><th class="target-col">TARGET</th><th class="mtd-col">MTD</th>
+            ${dayHeaderCells}
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="section-row"><td colspan="${3+nDays}"><i class="ti ti-clipboard-list"></i>&nbsp; Description — ข้อมูลดิบรายวัน (กรอกที่นี่ก่อน ตาราง KPI ด้านล่างจะคำนวณสดให้ทันที)</td></tr>
+          ${rawRows}
+          <tr class="section-row"><td colspan="${3+nDays}"><i class="ti ti-chart-bar"></i>&nbsp; KPI ที่คำนวณได้</td></tr>
+          ${kpiRows}
+        </tbody>
+      </table>
+    </div>
+  `;
+
+  document.querySelectorAll('.lpn-grid-input').forEach(inp=>{
+    inp.addEventListener('input', ()=>recomputeLpnGridColumn(inp.dataset.date, month, lpnKpis, days));
+  });
+  attachLpnPasteHandlers(days, month, lpnKpis);
+  days.forEach(d=>recomputeLpnGridColumn(dateStr(month,d), month, lpnKpis, days));
+}
+
+/* วางข้อมูลแบบ Excel: คัดลอกมาจาก Google Sheet (หลายช่องติดกัน คั่นด้วย Tab/ขึ้นบรรทัดใหม่)
+   แล้ววางในช่องเดียว ระบบจะกระจายค่าไปยังช่องวันถัดๆไป (แนวนอน) และรายการถัดไป (แนวตั้ง) ให้เอง */
+function attachLpnPasteHandlers(days, month, lpnKpis){
+  const fieldIds = RAW_FIELDS.map(f=>f.id);
+  document.querySelectorAll('.lpn-grid-input').forEach(inp=>{
+    inp.addEventListener('paste', (e)=>{
+      const text = (e.clipboardData || window.clipboardData).getData('text');
+      if(!text) return;
+      const rows = text.replace(/\r/g,'').split('\n');
+      while(rows.length && rows[rows.length-1]==='') rows.pop();
+      const isMultiCell = rows.length>1 || rows[0].includes('\t');
+      if(!isMultiCell) return; // ค่าเดียว ปล่อยให้วางตามปกติ
+
+      e.preventDefault();
+      const startField = inp.dataset.field;
+      const startDay = parseInt(inp.dataset.date.split('-')[2],10);
+      const startFieldIdx = fieldIds.indexOf(startField);
+      let maxCols = 1;
+
+      rows.forEach((rowText, rIdx)=>{
+        const cols = rowText.split('\t');
+        maxCols = Math.max(maxCols, cols.length);
+        const fieldIdx = startFieldIdx + rIdx;
+        if(fieldIdx<0 || fieldIdx>=fieldIds.length) return;
+        const fieldId = fieldIds[fieldIdx];
+        cols.forEach((val, cIdx)=>{
+          const day = startDay + cIdx;
+          if(day<1 || day>days.length) return;
+          const date = dateStr(month, day);
+          const target = document.querySelector(`.lpn-grid-input[data-field="${fieldId}"][data-date="${date}"]`);
+          if(!target) return;
+          const cleaned = val.trim().replace(/[,%\s]/g,'');
+          target.value = cleaned === '' ? '' : cleaned;
+        });
+      });
+
+      for(let c=0; c<maxCols; c++){
+        const day = startDay + c;
+        if(day>=1 && day<=days.length) recomputeLpnGridColumn(dateStr(month, day), month, lpnKpis, days);
+      }
+    });
+  });
+}
+
+function readLpnGridRow(date){
+  const row = { date };
+  RAW_FIELDS.forEach(f=>{
+    const inp = document.querySelector(`.lpn-grid-input[data-field="${f.id}"][data-date="${date}"]`);
+    const v = inp ? inp.value : '';
+    row[f.id] = v==='' ? null : parseFloat(v);
+  });
+  return row;
+}
+
+function recomputeLpnGridColumn(date, month, lpnKpis, days){
+  // อ่านค่าทุกวันในเดือนจากฟอร์ม (เพื่อคำนวณ MTD ให้ตรงกับที่กำลังกรอกอยู่ สดๆ)
+  const allRows = days.map(d=>readLpnGridRow(dateStr(month,d)));
+  const day = parseInt(date.split('-')[2],10);
+
+  lpnKpis.forEach(k=>{
+    const todayRow = allRows.find(r=>r.date===date);
+    let todayVal, mtdVal;
+    if(k.input_type === 'fixed'){
+      todayVal = todayRow.gmp;
+      const withVal = allRows.filter(r=>r.date<=date && r.gmp!==null && r.gmp!==undefined).sort((a,b)=>a.date.localeCompare(b.date));
+      mtdVal = withVal.length ? withVal[withVal.length-1].gmp : null;
+    } else {
+      const formula = LPN_FORMULAS[k.kpi_code];
+      const t = formula(todayRow);
+      todayVal = (t.num===null||t.num===undefined||t.den===null||t.den===undefined) ? null
+                 : (k.input_type==='count' ? t.num : (t.den>0 ? t.num/t.den : null));
+      let num=0, den=0;
+      allRows.filter(r=>r.date<=date).forEach(r=>{
+        const x=formula(r);
+        if(x.num===null||x.num===undefined||x.den===null||x.den===undefined) return;
+        num+=x.num; den+=x.den;
+      });
+      mtdVal = k.input_type==='count' ? num : (den>0 ? num/den : null);
+    }
+    const cell = document.getElementById(`kpiCell_${k.kpi_code}_${day}`);
+    if(cell) cell.textContent = fmtValue(todayVal, k);
+  });
+
+  // MTD คอลัมน์ = คำนวณถึง "วันสุดท้ายที่มีข้อมูล" ในเดือนนี้เสมอ (ไม่ใช่แค่วันที่แก้ล่าสุด)
+  const lastDateWithData = allRows.filter(r=>RAW_FIELDS.some(f=>r[f.id]!==null && r[f.id]!==undefined)).map(r=>r.date).sort().pop();
+  lpnKpis.forEach(k=>{
+    let mtdVal;
+    if(!lastDateWithData){ mtdVal = null; }
+    else if(k.input_type === 'fixed'){
+      const withVal = allRows.filter(r=>r.date<=lastDateWithData && r.gmp!==null && r.gmp!==undefined).sort((a,b)=>a.date.localeCompare(b.date));
+      mtdVal = withVal.length ? withVal[withVal.length-1].gmp : null;
+    } else {
+      const formula = LPN_FORMULAS[k.kpi_code];
+      let num=0, den=0;
+      allRows.filter(r=>r.date<=lastDateWithData).forEach(r=>{
+        const x=formula(r);
+        if(x.num===null||x.num===undefined||x.den===null||x.den===undefined) return;
+        num+=x.num; den+=x.den;
+      });
+      mtdVal = k.input_type==='count' ? num : (den>0 ? num/den : null);
+    }
+    const mtdCell = document.getElementById(`mtdCell_${k.kpi_code}`);
+    if(mtdCell) mtdCell.textContent = fmtValue(mtdVal, k);
+  });
+}
+
+function entrySaveButtons(){
+  return [document.getElementById('btnSaveEntryTop'), document.getElementById('btnSaveEntry')];
+}
+function setEntrySaveButtonsState(disabled, html){
+  entrySaveButtons().forEach(b=>{ if(b){ b.disabled = disabled; b.innerHTML = html; } });
+}
+function showSaveOverlay(title, sub){
+  document.getElementById('saveOverlayTitle').innerHTML = `<i class="ti ti-device-floppy"></i> ${title}`;
+  document.getElementById('saveOverlaySub').textContent = sub || 'กำลังส่งข้อมูลไปยัง Google Sheet โปรดรอสักครู่';
+  document.getElementById('saveOverlay').classList.remove('hide');
+}
+function hideSaveOverlay(){
+  document.getElementById('saveOverlay').classList.add('hide');
+}
+document.getElementById('entryUnit').addEventListener('change', renderEntryForm);
+document.getElementById('entryDate').addEventListener('change', renderEntryForm);
+
+entrySaveButtons().forEach(btn=>{
+  if(!btn) return;
+  btn.addEventListener('click', async ()=>{
+    const unitCode = document.getElementById('entryUnit').value;
+    if(unitCode === 'LPN'){ await saveLpnGridEntry(); return; }
+    await saveBnaEntry();
+  });
+});
+
+async function saveLpnGridEntry(){
+  const banner = document.getElementById('entryBanner');
+  const month = currentMonth;
+  const nDays = daysInMonth(month);
+  const days = Array.from({length:nDays}, (_,i)=>i+1);
+
+  const rows = days.map(d=>{
+    const date = dateStr(month, d);
+    const raw = readLpnGridRow(date);
+    delete raw.date;
+    return { date, raw };
+  }).filter(r=>RAW_FIELDS.some(f=>r.raw[f.id]!==null && r.raw[f.id]!==undefined)); // ข้ามวันที่ไม่มีข้อมูลเลย
+
+  if(!rows.length){
+    banner.className = 'banner err show';
+    banner.innerHTML = 'ยังไม่ได้กรอกข้อมูลวันไหนเลยในเดือนนี้';
+    return;
+  }
+
+  setEntrySaveButtonsState(true, 'กำลังบันทึก...');
+  showSaveOverlay('กำลังบันทึกข้อมูลลำพูน...', `กำลังบันทึกข้อมูล ${rows.length} วัน ไปยัง Google Sheet`);
+  try{
+    const res = await fetch(GAS_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ action:'saveLpnRawBatch', rows, user:'dashboard' })
+    });
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error || 'บันทึกไม่สำเร็จ');
+
+    rows.forEach(r=>{
+      const idx = LPN_RAW.findIndex(x=>x.date===r.date);
+      const newRow = { date:r.date, ...r.raw };
+      if(idx>=0) LPN_RAW[idx] = newRow; else LPN_RAW.push(newRow);
+    });
+
+    banner.className = 'banner ok show';
+    banner.innerHTML = `<i class="ti ti-circle-check"></i> บันทึกสำเร็จ ${rows.length} วัน (เพิ่มใหม่ ${json.inserted}, อัปเดตทับ ${json.updated})`;
+    renderAll();
+  }catch(err){
+    banner.className = 'banner err show';
+    banner.innerHTML = `<b>บันทึกไม่สำเร็จ:</b> ${err.message}`;
+  }finally{
+    setEntrySaveButtonsState(false, '<i class="ti ti-device-floppy"></i> บันทึกทั้งเดือน');
+    hideSaveOverlay();
+  }
+}
+
+async function saveBnaEntry(){
+  const date = document.getElementById('entryDate').value;
+  const rows = [...document.querySelectorAll('#entryForm .formgrid[data-kpi]')].map(fg=>{
+    const kpi_code = fg.dataset.kpi;
+    const isRatio = fg.dataset.type === 'ratio';
+    const numerator = parseFloat(fg.querySelector('.f-num').value || '0');
+    const denominator = isRatio ? parseFloat(fg.querySelector('.f-den').value || '0') : 1;
+    const note = fg.querySelector('.f-note').value || '';
+    return { date, kpi_code, numerator, denominator, note };
+  });
+
+  setEntrySaveButtonsState(true, 'กำลังบันทึก...');
+  showSaveOverlay('กำลังบันทึกข้อมูล...', `กำลังบันทึกข้อมูลวันที่ ${date} ไปยัง Google Sheet`);
+  const banner = document.getElementById('entryBanner');
+  try{
+    const res = await fetch(GAS_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ action:'saveDaily', rows, user:'dashboard' })
+    });
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error || 'บันทึกไม่สำเร็จ');
+
+    rows.forEach(row=>{
+      const idx = DAILY.findIndex(d=>d.date===row.date && d.kpi_code===row.kpi_code);
+      if(idx>=0) DAILY[idx] = row; else DAILY.push(row);
+    });
+
+    banner.className = 'banner ok show';
+    banner.innerHTML = `<i class="ti ti-circle-check"></i> บันทึกสำเร็จ (เพิ่มใหม่ ${json.inserted}, อัปเดตทับ ${json.updated})`;
+    renderAll();
+  }catch(err){
+    banner.className = 'banner err show';
+    banner.innerHTML = `<b>บันทึกไม่สำเร็จ:</b> ${err.message}`;
+  }finally{
+    setEntrySaveButtonsState(false, '<i class="ti ti-device-floppy"></i> บันทึกข้อมูลวันนี้');
+    hideSaveOverlay();
+  }
+}
+
+/* ---------------- Settings ---------------- */
+function renderSettings(){
+  const el = document.getElementById('settingsTables');
+  const groups = [
+    {code:'LPN', label:'ส่วนงานคลังลำพูน'},
+    {code:'BNA_AB', label:'คลังบางนา AB'},
+    {code:'BNA_CC', label:'คลังบางนา CC'}
+  ];
+  el.innerHTML = groups.map(g=>{
+    const kpis = KPIS.filter(k=>k.unit_code===g.code);
+    const meta = UNIT_ICONS[g.code] || UNIT_ICONS.dept;
+    return `
+      <div class="section-title" style="margin-top:22px;"><i class="ti ${meta.icon}" style="color:${meta.color};"></i> ${g.label}</div>
+      <div class="card" style="padding:0;">
+        <div class="settings-row head">
+          <div><i class="ti ti-list-check"></i> KPI</div><div><i class="ti ti-scale"></i> น้ำหนัก</div><div>เกณฑ์ A</div><div>เกณฑ์ B</div><div>เกณฑ์ C</div><div>เกณฑ์ D</div><div><i class="ti ti-toggle-left"></i> ใช้งาน</div>
+        </div>
+        ${kpis.map(k=>`
+          <div class="settings-row" data-kpi="${k.kpi_code}">
+            <div class="kpi-name">${k.kpi_name}</div>
+            <div style="display:flex;align-items:center;gap:3px;">
+              <input type="number" step="1" min="0" max="100" class="s-weight" value="${(Number(k.weight)*100).toFixed(0)}" style="width:100%;">
+              <span class="weight-tag">%</span>
+            </div>
+            <input type="number" step="any" class="s-a" value="${k.grade_A}">
+            <input type="number" step="any" class="s-b" value="${k.grade_B}">
+            <input type="number" step="any" class="s-c" value="${k.grade_C}">
+            <input type="number" step="any" class="s-d" value="${k.grade_D}">
+            <input type="checkbox" class="s-active" ${(k.active===true||k.active==='TRUE'||k.active===1)?'checked':''}>
+          </div>`).join('')}
+      </div>`;
+  }).join('');
+}
+
+document.getElementById('btnSaveSettings').addEventListener('click', async ()=>{
+  const btn = document.getElementById('btnSaveSettings');
+  const rows = [...document.querySelectorAll('#settingsTables .settings-row[data-kpi]')].map(row=>({
+    kpi_code: row.dataset.kpi,
+    weight: parseFloat(row.querySelector('.s-weight').value) / 100,
+    grade_A: parseFloat(row.querySelector('.s-a').value),
+    grade_B: parseFloat(row.querySelector('.s-b').value),
+    grade_C: parseFloat(row.querySelector('.s-c').value),
+    grade_D: parseFloat(row.querySelector('.s-d').value),
+    active: row.querySelector('.s-active').checked
+  }));
+
+  btn.disabled = true; btn.textContent = 'กำลังบันทึก...';
+  showSaveOverlay('กำลังบันทึกการตั้งค่า...', 'กำลังอัปเดตน้ำหนัก/เกณฑ์เกรด ไปยัง Google Sheet');
+  const banner = document.getElementById('settingsBanner');
+  try{
+    const res = await fetch(GAS_URL, {
+      method:'POST',
+      headers:{'Content-Type':'text/plain;charset=utf-8'},
+      body: JSON.stringify({ action:'saveConfigKpi', rows })
+    });
+    const json = await res.json();
+    if(!json.ok) throw new Error(json.error || 'บันทึกไม่สำเร็จ');
+
+    rows.forEach(row=>{
+      const k = KPIS.find(x=>x.kpi_code===row.kpi_code);
+      if(k) Object.assign(k, row);
+    });
+
+    banner.className = 'banner ok show';
+    banner.innerHTML = `<i class="ti ti-circle-check"></i> บันทึกการตั้งค่าสำเร็จ (${json.updated} รายการ)`;
+    renderAll();
+  }catch(err){
+    banner.className = 'banner err show';
+    banner.innerHTML = `<b>บันทึกไม่สำเร็จ:</b> ${err.message}`;
+  }finally{
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-device-floppy"></i> บันทึกการตั้งค่า';
+    hideSaveOverlay();
+  }
+});
+
+init();
+</script>
+</body>
+</html>
